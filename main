@@ -1,0 +1,59 @@
+import pandas as pd
+import plotly.express as px
+
+df = pd.read_csv('DP_LIVE_09042023110315225.csv')
+
+# For Chart 1 (TOT):
+# Filter only the data for the "TOT" category (average life expectancy)
+df_tot_all = df[df['SUBJECT'] == 'TOT'].copy()
+
+# Calculate the order of countries based on the mean values (descending)
+ordine_tari_tot = (
+    df_tot_all.groupby('LOCATION')['Value']
+    .mean()
+    .sort_values(ascending=False)
+    .index
+    .tolist()
+)
+
+# Create the animated chart for TOT
+fig_tot = px.scatter(
+    df_tot_all,
+    x='Value',
+    y='LOCATION',
+    animation_frame='TIME',  # slider for years
+    title="Speranța de viață medie (TOT) pentru toți anii",
+    labels={'Value': 'Speranța de viață', 'LOCATION': 'Țara'},
+    category_orders={'LOCATION': ordine_tari_tot}
+)
+fig_tot.update_traces(marker=dict(size=10))
+fig_tot.show()
+
+
+# For Chart 2 (comparison for women and men):
+# Filter the data for the "MEN" and "WOMEN" categories
+df_gender_all = df[df['SUBJECT'].isin(['MEN', 'WOMEN'])].copy()
+
+# Use the country order calculated based on the "TOT" values
+ordine_tari_gender = ordine_tari_tot
+
+# Create the animated chart for gender categories
+fig_gender = px.scatter(
+    df_gender_all,
+    x='Value',
+    y='LOCATION',
+    color='SUBJECT',
+    animation_frame='TIME',
+    title="Comparativ: Speranța de viață a femeilor și a bărbaților pentru toți anii",
+    labels={'Value': 'Speranța de viață', 'LOCATION': 'Țara', 'SUBJECT': 'Categorie'},
+    category_orders={'LOCATION': ordine_tari_gender}
+)
+fig_gender.update_traces(marker=dict(size=10))
+
+# Set the desired colors: red for WOMEN and blue for MEN.
+# Since Plotly Express does not allow directly setting colors based on category,
+# force the color for each trace.
+culori = {'WOMEN': 'red', 'MEN': 'blue'}
+fig_gender.for_each_trace(lambda t: t.update(marker_color=culori[t.name]) if t.name in culori else t)
+
+fig_gender.show()
